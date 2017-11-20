@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tutorial</title>
+    <script src="https://ondras.github.io/rot.js/rot.js"> </script>
+    <script src="goblin.js" type="module"></script>
+    <script src="pedro.js" type="module"></script>
+    <script src="gameMap.js" type="module"></script>
+    <script src="PlayerCharacter.js" type="module"></script>
+    <script src="pureScheduler.js" type="module"></script>
+    <script src="customMegaCanvas.js" type="module"></script>
+    <script src="combatCalculator.js" type="module"></script>
+    <script src="largerObjects.js" type="module"></script>
+    <script src="item.js" type="module"></script>
+    <script src="goldRing.js" type="module"></script>
+    <script src="furniture.js" type="module"></script>
+    <script src="exit.js" type="module"></script>
+    <script type="text/javascript">
+
+        var Game = {
+            display:null,
+            textDisplay:null,
+            characterDisplay:null,
+
+
+            init:function () {
+                let javaJunk = new ROT.customMegaCanvas;
+                let javaJunk2 = new ROT.customMegaCanvas;
+                let firstExitForReason = new Game.exit();
+                this.realMap = new Game.gameMap();
+                console.log("Oh boy!");
+                this.display = new ROT.customMegaCanvas();
+                this.textDisplay = new ROT.customMegaCanvas();
+                this.characterDisplay = new ROT.customMegaCanvas();
+                this.combatCalc = new Game.combatCalculator();
+                console.log("this is the displays");
+                console.log(this.textDisplay);
+                console.log(this.textDisplay.temporaryFunction());
+
+                document.body.appendChild(this.display.getContainer());
+                document.body.appendChild(this.characterDisplay.getContainer())
+                document.body.appendChild(this.textDisplay.getContainer());;
+                var gob = new Game.Goblin(4,1);
+                Game.scheduler = new ROT.Scheduler.Simple();
+                Game.realScheduler = new Game.pureScheduler();
+                this.realMap = new Game.gameMap();
+                this._generateMap();
+                this.engine = new ROT.Engine(Game.scheduler);
+                this.engine.start();
+                window.addEventListener('keydown', Game._keyPressedByPlayer);
+            }
+        };
+
+        Game.combatCalc = null;
+
+        Game.player = null;
+
+        Game.realMap = null;
+
+        Game.textLog = [];
+
+        Game.engine = null;
+
+        Game.scheduler = null;
+
+        Game.realScheduler = null;
+
+        Game.dispOptions = {
+            width: 150,
+            height: 10,
+            transpose: false,
+            layout: "rect",
+            fontSize: 15,
+            spacing: 1,
+            border: 0,
+            forceSquareRatio: false,
+            fontFamily: "monospace",
+            fontStyle: "",
+            fg: "#ccc",
+            bg: "#000",
+            tileWidth: 32,
+            tileHeight: 32,
+            tileMap: {},
+            tileSet: null,
+            tileColorize: false,
+            termColor: "xterm"
+        };
+
+        Game._logBasicMessage = function(message){
+            Game.textLog.push(message);
+            var long = [];
+            Game.textLog.forEach(function(element) {
+                long.push(element);
+            });
+            long = long.reverse();
+            this.textDisplay.newDraw(1, 1, [long.join("~")], this.textDisplay);
+          //  this.textDisplay.newDraw(1, 1, [long.join("~")]);
+            //this.textDisplay.drawText(1, 1, long.join(" "), 138);
+        };
+
+        Game._createBeing = function(what, freeCells){
+            var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
+            var key = freeCells.splice(index, 1)[0];
+            var parts = key.split(",");
+            var x = parseInt(parts[0]);
+            var y = parseInt(parts[1]);
+            return new what(x, y);
+        };
+
+        Game.removeFromScheduler = function (theGuy) {
+            Game.realScheduler.removeGuy(theGuy);
+        };
+
+        Game.removeFromMap = function (theGuy) {
+          this.realMap._removeGuyFromGame(theGuy);
+        };
+        
+        Game._createMonster = function (guy, freeCells) {
+            var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
+            var key = freeCells.splice(index, 1)[0];
+            var parts = key.split(",");
+            var x = parseInt(parts[0]);
+            var y = parseInt(parts[1]);
+            var someGuy = new guy(x, y);
+            Game.realScheduler.addGuy(someGuy);
+            return someGuy;
+        };
+
+        Game._attackPlayer = function (attacker) {
+            Game.player.takeDamage(1);
+            this._logBasicMessage("Oh no. Attacks");
+            this._logBasicMessage(["Only ", Game.player._hp, " Left before you die"].join());
+    };
+
+    Game._attackEnemy = function (victim) {
+        Game.characterDisplay.startCombatScreen();
+        Game.player.setTarget(victim);
+        Game.player.stopListening();
+       // let hitSuccessful = Game.combatCalc.attackTarget({attackingPlayer: Game.player, subject: victim});
+       // if (hitSuccessful == true)
+       // {
+       //     this._logBasicMessage("You hit him");
+       //     victim.takeDamage(1, victim);
+       // }
+       // else {
+       //     this._logBasicMessage("You missed him");
+       // }
+       // Game.engine.unlock();
+       // Game.realScheduler.everyOneActs();
+       // this._drawWholeMap();
+    };
+
+        Game._finishAttackEnemy = function (victim) {
+             let hitSuccessful = Game.combatCalc.attackTarget({attackingPlayer: Game.player, subject: victim});
+             if (hitSuccessful == true)
+             {
+                 this._logBasicMessage("You hit him");
+                 victim.takeDamage(1, victim);
+             }
+             else {
+                 this._logBasicMessage("You missed him");
+             }
+             Game.engine.unlock();
+             Game.realScheduler.everyOneActs();
+            Game.player.startListening();
+             this._drawWholeMap();
+        };
+
+
+
+        Game._getSpace = function (x, y, l) {
+            return Game.gameMap._getFloorSpace([x+","+y]);
+        };
+
+        Game._keyPressedByPlayer = function(key)
+        {
+            Game.player.handleEvent(key);
+            Game.characterDisplay.handleEvent(key);
+        };
+
+    Game._playerWantsToMove = function (newX, newY){
+        if (this.player._dead == false)
+        {//getAttackOptionsTemp2
+           //NOTE this is disabled temporarily for combat screen update. this.characterDisplay.updateHPDisplay(); // NOTE this is a bad spot.
+            this.player._x = newX;
+            this.player._y = newY;
+            this.realMap.clearPersonMap();
+            this.realMap.setPersonSpace([this.player._x+","+this.player._y], this.player);
+            this.realMap.showCurrentSpaceMessage();
+         window.removeEventListener("keydown", this);
+         Game.engine.unlock();
+            Game.realScheduler.everyOneActs();
+            this._drawWholeMap(); // NOTE this is here temporarily. This is also why pedro aint showing up I think. Because we wipe the map the ndraw the map.
+        }
+    };
+
+        Game._moveDownALevel = function () {
+            //this.realMap = new Game.gameMap();
+            this.realMap.clearFloorMap();
+            this.realMap.clearOnFloorMap();
+            this.display.cleanScreen();
+            this.realScheduler.removeEveryoneFromScheduler();
+            this.realMap.clearPersonMap();
+            this._generateMap();
+        };
+
+       // Game._createMonster = function (guy, freeCells) {
+       //     var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
+       //     var key = freeCells.splice(index, 1)[0];
+       //     var parts = key.split(",");
+       //     var x = parseInt(parts[0]);
+       //     var y = parseInt(parts[1]);
+       //     var someGuy = new guy(x, y);
+       //     Game.realScheduler.addGuy(someGuy);
+       //     return someGuy;
+       // };
+
+        Game._generateMap = function () {
+            var digger = new ROT.Map.Digger();
+            var freeCells = [];
+
+            var digCallback = function (x, y, value) {
+                if (value) { return; }
+                var key = x+","+y;
+                freeCells.push(key);
+                this.realMap.constructor.prototype.setFloorSpace(key, ".");
+            };
+            digger.create(digCallback.bind(this));
+
+            this._generateBoxes(freeCells);
+
+            this._drawWholeMap();
+
+            this._createPlayer(freeCells);
+
+            this.thePed = this._createMonster(Game.Pedro, freeCells);
+            this.thePed2 = this._createMonster(Game.Pedro, freeCells);
+        };
+
+        Game._createPlayer = function (freeCells) {
+            var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
+            var key = freeCells.splice(index, 1)[0];
+            var parts = key.split(",");
+            var x = parseInt(parts[0]);
+            var y = parseInt(parts[1]);
+            this.player = new Game.PlayerCharacter(x, y);
+        };
+
+        Game._generateBoxes = function (freeCells) {
+          for (var i=0;i<10;i++)
+          {
+              let anItem = new Game.goldRing();
+              var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
+              var key = freeCells.splice(index, 1)[0];
+              this.realMap.constructor.prototype.setOnFloorSpace(key, anItem);
+              //this.gameMap.getFloorMap()[key] = "*";
+              if (!i) {this.ananas = key;}
+          }
+            let theExit = new Game.exit();
+            let index2 = Math.floor(ROT.RNG.getUniform() * freeCells.length);
+            let key2 = freeCells.splice(index2, 1)[0];
+            this.realMap.constructor.prototype.setOnFloorSpace(key2, theExit);
+        };
+
+        Game._drawWholeMap = function(){
+            this.realMap._drawWholeMap()};
+    </script>
+</head>
+<body onload="Game.init()">
+<h1>Ananas aus Caracas</h1>
+</body>
+</html>
