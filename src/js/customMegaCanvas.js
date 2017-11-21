@@ -157,8 +157,8 @@ ROT.customMegaCanvas.prototype.handleEvent = function(e){
                 }
                 if (code == 104)
                 {
-                    console.log("This is highlighted combat options");
-                    console.log(this._highlightedCombatOption);
+                    //console.log("This is highlighted combat options");
+                    //console.log(this._highlightedCombatOption);
                     if (this._highlightedCombatOption <= 0)
                     {
                         this._highlightedCombatOption = (this._attackOptions.length - 1);
@@ -170,7 +170,7 @@ ROT.customMegaCanvas.prototype.handleEvent = function(e){
                 }
                 if (code == 13)
                 {
-                    console.log(this._attackOptions[this._highlightedCombatOption]);
+                 //   console.log(this._attackOptions[this._highlightedCombatOption]);
                     Game._finishAttackEnemy(Game.player.getTarget());
                     this.stopListening();
                 }
@@ -346,7 +346,7 @@ ROT.customMegaCanvas.prototype.newDraw = function (x, y, stringList, whosCalled)
                     }
                     else
                     {
-                        console.log(whosCalled);
+   //                     console.log(whosCalled);
                         whosCalled.draw(cx++, cy, c, "#FF0")//Game.characterDisplay.draw(cx++, cy, c, "#FF0");
                     }
                 }

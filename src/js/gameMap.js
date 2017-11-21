@@ -104,6 +104,12 @@ Game.gameMap.prototype._playerPickup = function(theX, theY)
     let theItem = this.getOnFloorSpace(theKey);//onFloorMap[theKey];
     if (theItem != null)
     {
+        console.log("it's type");
+        console.log(theItem);
+        console.log(theItem.prototype.isPrototypeOf(Game.weapon()));
+        console.log(theItem instanceof Game.weapon);
+        console.log(theItem instanceof Game.shortSpear);
+        console.log(theItem instanceof Game.spearType);
         console.log(theItem instanceof Game.furniture);
         if (theItem instanceof Game.furniture)
         {
@@ -112,9 +118,18 @@ Game.gameMap.prototype._playerPickup = function(theX, theY)
         }
         else
         {
-            Game.player.inventoryAdd(theItem);
-            this.setOnFloorSpace(theKey, null);//onFloorMap[theKey] = null;
-            Game._logBasicMessage("You have picked up" + theItem._description());
+            if (theItem instanceof Game.weapon)
+            {
+                console.log("This is a weapon.");
+                Game.player._wieldWeapon(theItem);
+            }
+
+            else
+            {
+                Game.player.inventoryAdd(theItem);
+                this.setOnFloorSpace(theKey, null);//onFloorMap[theKey] = null;
+                Game._logBasicMessage("You have picked up" + theItem._description());
+            }
         }
     }
 };

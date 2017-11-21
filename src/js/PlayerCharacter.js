@@ -5,12 +5,25 @@ Game.PlayerCharacter = function(x, y){
     this._draw();
     this._dead = false;
     this._inventory = [];
+    this._equiped = {weapon: null};
     this._listeningForInput = true;
     this._target = null;
 };
 
 Game.PlayerCharacter.prototype._draw = function () {
     Game.display.draw(this._x, this._y, "@", "#FF0")
+};
+
+Game.PlayerCharacter.prototype._wieldWeapon = function (wep) { // NOTE this is temporary
+    if (this._equiped.weapon == null)
+    {
+        console.log("A weapon has been wielded.");
+        this._equiped.weapon = wep;
+    }
+};
+
+Game.PlayerCharacter.prototype._getEquippedWeapon = function () {
+    return this._equiped.weapon;
 };
 
 Game.PlayerCharacter.prototype.act = function () {
@@ -79,6 +92,7 @@ let littleFloorSpace = Game.realMap.playerCheckingFloorSpace(this._x+","+this._y
 Game.PlayerCharacter.prototype.pickupItem = function () {
     console.log("calling pickup");
     Game.realMap._playerPickup(this._x, this._y);
+    //_wieldWeapon
 };
 
 Game.PlayerCharacter.prototype.inventoryAdd = function (theItem) {

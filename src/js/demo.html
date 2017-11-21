@@ -16,6 +16,9 @@
     <script src="goldRing.js" type="module"></script>
     <script src="furniture.js" type="module"></script>
     <script src="exit.js" type="module"></script>
+    <script src="weapon.js" type="module"></script>
+    <script src="spearType.js" type="module"></script>
+    <script src="shortSpear.js" type="module"></script>
     <script type="text/javascript">
 
         var Game = {
@@ -27,6 +30,7 @@
             init:function () {
                 let javaJunk = new ROT.customMegaCanvas;
                 let javaJunk2 = new ROT.customMegaCanvas;
+                let javaSpearJunk = new Game.shortSpear;
                 let firstExitForReason = new Game.exit();
                 this.realMap = new Game.gameMap();
                 console.log("Oh boy!");
@@ -250,7 +254,7 @@
         Game._generateBoxes = function (freeCells) {
           for (var i=0;i<10;i++)
           {
-              let anItem = new Game.goldRing();
+              let anItem = new Game.shortSpear();
               var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
               var key = freeCells.splice(index, 1)[0];
               this.realMap.constructor.prototype.setOnFloorSpace(key, anItem);
