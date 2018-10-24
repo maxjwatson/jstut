@@ -6,7 +6,14 @@
     <script src="https://ondras.github.io/rot.js/rot.js"> </script>
     <script src="goblin.js" type="module"></script>
     <script src="pedro.js" type="module"></script>
+    <script src="CNDWaste.js" type="module"></script>
+    <script src="EarthWormCocoon.js" type="module"></script>
+    <script src="EarthWorm.js" type="module"></script>
+    <script src="WormBox.js" type="module"></script>
+    <script src="Merchant.js" type="module"></script>
+    <script src="NailPile.js" type="module"></script>
     <script src="gameMap.js" type="module"></script>
+    <script src="WaterFlow.js" type="module"></script>
     <script src="PlayerCharacter.js" type="module"></script>
     <script src="pureScheduler.js" type="module"></script>
     <script src="customMegaCanvas.js" type="module"></script>
@@ -19,6 +26,13 @@
     <script src="weapon.js" type="module"></script>
     <script src="spearType.js" type="module"></script>
     <script src="shortSpear.js" type="module"></script>
+    <script src="secondExit.js" type="module"></script>
+    <script src="HomeBase.js" type="module"></script>
+    <script src="WorldStateTracker.js" type="module"></script>
+    <script src="Employee.js" type="module"></script>
+    <script src="CommonNail.js" type="module"></script>
+    <script src="WoodBoard.js" type="module"></script>
+    <script src="WoodSupport.js" type="module"></script>
     <script type="text/javascript">
 
         var Game = {
@@ -31,28 +45,32 @@
                 let javaJunk = new ROT.customMegaCanvas;
                 let javaJunk2 = new ROT.customMegaCanvas;
                 let javaSpearJunk = new Game.shortSpear;
+                let baseJunk = new Game.HomeBase();
                 let firstExitForReason = new Game.exit();
                 this.realMap = new Game.gameMap();
                 console.log("Oh boy!");
                 this.display = new ROT.customMegaCanvas();
                 this.textDisplay = new ROT.customMegaCanvas();
-                this.characterDisplay = new ROT.customMegaCanvas();
+                this.characterDisplay = new ROT.customMegaCanvas({height: 45});
                 this.combatCalc = new Game.combatCalculator();
                 console.log("this is the displays");
                 console.log(this.textDisplay);
                 console.log(this.textDisplay.temporaryFunction());
 
                 document.body.appendChild(this.display.getContainer());
-                document.body.appendChild(this.characterDisplay.getContainer())
-                document.body.appendChild(this.textDisplay.getContainer());;
+                document.body.appendChild(this.characterDisplay.getContainer());
+                document.body.appendChild(this.textDisplay.getContainer());
                 var gob = new Game.Goblin(4,1);
                 Game.scheduler = new ROT.Scheduler.Simple();
                 Game.realScheduler = new Game.pureScheduler();
+                Game._homeBase = new Game.HomeBase();
+                Game._worldTracker = new Game.WorldStateTracker();
                 this.realMap = new Game.gameMap();
                 this._generateMap();
                 this.engine = new ROT.Engine(Game.scheduler);
                 this.engine.start();
                 window.addEventListener('keydown', Game._keyPressedByPlayer);
+                this._startBaseScreen();
             }
         };
 
@@ -137,6 +155,11 @@
             this._logBasicMessage(["Only ", Game.player._hp, " Left before you die"].join());
     };
 
+    Game._printNewDayInfo = function (theInfo) {
+        console.log("PRINT NEW DAY INFO HAS BEEN CALLED");
+        this._logBasicMessage(theInfo.foodMessages);
+    };
+
     Game._attackEnemy = function (victim) {
         Game.characterDisplay.startCombatScreen();
         Game.player.setTarget(victim);
@@ -211,7 +234,7 @@
 
        // Game._createMonster = function (guy, freeCells) {
        //     var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
-       //     var key = freeCells.splice(index, 1)[0];
+       //     var key = freeCells. splice(index, 1)[0];
        //     var parts = key.split(",");
        //     var x = parseInt(parts[0]);
        //     var y = parseInt(parts[1]);
@@ -219,6 +242,17 @@
        //     Game.realScheduler.addGuy(someGuy);
        //     return someGuy;
        // };
+
+        Game._startBaseScreen = function () {
+            console.log("This is start base screen");
+            this.realMap.clearFloorMap();
+            this.realMap.clearOnFloorMap();
+            this.realScheduler.removeEveryoneFromScheduler();
+            this.realMap.clearPersonMap();
+            this.display.cleanScreen();
+            // Here should be something to reset a bunch of stuff so we don't wind up being in the combat menu while back at the base.
+            this.display.startBaseScreen();
+        };
 
         Game._generateMap = function () {
             var digger = new ROT.Map.Digger();
@@ -265,6 +299,11 @@
             let index2 = Math.floor(ROT.RNG.getUniform() * freeCells.length);
             let key2 = freeCells.splice(index2, 1)[0];
             this.realMap.constructor.prototype.setOnFloorSpace(key2, theExit);
+
+            let theOtherExit = new Game.secondExit();
+            let index3 = Math.floor(ROT.RNG.getUniform() * freeCells.length);
+            let key3 = freeCells.splice(index3, 1)[0];
+            this.realMap.constructor.prototype.setOnFloorSpace(key3, theOtherExit);
         };
 
         Game._drawWholeMap = function(){

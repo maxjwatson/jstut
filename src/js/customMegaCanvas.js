@@ -31,6 +31,22 @@ ROT.customMegaCanvas = function(options) {
     this._inCombatMenu = false;
     this._textSelectedAttackOption = null;
     this._highlightedCombatOption = null;
+    this._inBase = false;
+    this._schedulingWork = false;
+    this._schedulingSpecific = false;
+    this._workOptions = [];
+    this._purchaseOptions = [];
+    this._selectedWorkOption = 0;
+    this._selectedEmployee = null;
+    this._selectedHour = 1;
+    this._selectedItem = 1;
+    this._selectedPurchaseOptions = 1;
+    this._inMainStockPileScreen = false;
+    this._inMainVisitorScreen = false;
+    this._selectedPile = null;
+    this._whichScreen = "default";
+    this.__lookingAtSpecificvisitor = false;
+    this._selectedVisitor = null;
     console.log("this is the custom mega canvas");
     console.log(this);
     // this._amIMenu = false;
@@ -131,62 +147,599 @@ ROT.customMegaCanvas.prototype.cleanScreen = function() {
     console.log("clean screen has been called");
 };
 
+ROT.customMegaCanvas.prototype._stopAllScreens = function () { // NOTE this is not finished yet.
+    this._schedulingSpecific = false;
+    this._schedulingWork = false;
+    this._inMainStockPileScreen = false;
+};
+
+ROT.customMegaCanvas.prototype._printBaseOptions = function () {
+    let baseOptions = Game._homeBase.getBaseOptions();
+    let stringBox = [];
+    Object.keys(baseOptions).forEach(function (key) {
+        stringBox.push(key+":"+baseOptions[key]+"~");
+    });
+    Game.characterDisplay.newDraw(1, 1,stringBox ,this);
+};
+
+ROT.customMegaCanvas.prototype.getSellableItems = function () {
+    let ring1 = new Game.goldRing();
+    let ring2 = new Game.goldRing();
+    let ring3 = new Game.goldRing();
+    let ring4 = new Game.goldRing();
+    let tempSellMap = {1:ring1, 2:ring2, 3:ring3, 4:ring4};
+    return tempSellMap;
+};
+
+ROT.customMegaCanvas.prototype._printScheduleOptions = function () {
+    let employeeOptions = Game._homeBase.getEmployees();
+    let stringBox = [];
+    Object.keys(employeeOptions).forEach(function (key) {
+        stringBox.push(key+":"+employeeOptions[key]+"~");
+    });
+    Game.characterDisplay.newDraw(1, 1,stringBox ,this);
+    console.log("We are now scheduling work!");
+};
+
+ROT.customMegaCanvas.prototype._printSpecificScheduleOptions = function () {
+    let employeeHours = Game._homeBase.getEmployeeHours(this._selectedEmployee);
+        this._workOptions = Game._homeBase.getEmployeeWorkOptions(this._selectedEmployee);
+        let stringBox = [];
+        stringBox.push(this._workOptions[this._selectedWorkOption] + "~~~");
+        let theSelected = this._selectedHour;
+
+        Object.keys(employeeHours).forEach(function (key) {
+            if (key == theSelected) {
+                stringBox.push("`" + key + ":" + employeeHours[key] + "~");
+            }
+            else {
+                stringBox.push(key + ":" + employeeHours[key] + "~");
+            }
+        });
+        Game.characterDisplay.newDraw(1, 1, stringBox, this);
+    };
+
+ROT.customMegaCanvas.prototype._printBuyMenu = function () {
+    let purchaseOptions = this._selectedVisitor.getGoods();
+    this._purchaseOptions = purchaseOptions;
+    let stringBox = [];
+    stringBox.push("Buy my stuff.~~~");
+    let theSelected = this._selectedItem;
+    let theMerch = this._selectedVisitor;
+    Object.keys(purchaseOptions).forEach(function (key) {
+        let pricey = theMerch.getPriceFor(purchaseOptions[key]).toString();
+        let itemDesc = "A gold ring";//purchaseOptions[key]._description;
+        if (key == theSelected) {
+            stringBox.push("`" + key + ":" + itemDesc + pricey + "$" + "~");
+        }
+        else {
+            stringBox.push(key + ":" + itemDesc + pricey + "$" + "~");
+        }
+    });
+    Game.characterDisplay.newDraw(1, 1, stringBox, this);
+};
+
+ROT.customMegaCanvas.prototype._printSellMenu = function () {
+    let purchaseOptions = this.getSellableItems();
+    console.log("This is in sell menu");
+    this._purchaseOptions = purchaseOptions;
+    let stringBox = [];
+    stringBox.push("Show me what you have.~~~");
+    let theSelected = this._selectedItem;
+    let theMerch = this._selectedVisitor;
+    Object.keys(purchaseOptions).forEach(function (key) {
+        let pricey = theMerch.getPriceFor(purchaseOptions[key]).toString();
+        let itemDesc = "A gold ring";//purchaseOptions[key]._description;
+        if (key == theSelected) {
+            stringBox.push("`" + key + ":" + itemDesc + pricey + "$" + "~");
+        }
+        else {
+            stringBox.push(key + ":" + itemDesc + pricey + "$" + "~");
+        }
+    });
+    console.log("this is string box");
+    console.log(stringBox);
+    Game.characterDisplay.newDraw(1, 1, stringBox, this);
+};
+
+ROT.customMegaCanvas.prototype._printSpecificStockPile = function () {
+    let pileItems = Game._homeBase.getPileItems(this._selectedPile);
+    let stringBox = [];
+    let theSelected = this._selectedItem;
+
+    console.log(this._selectedItem);
+
+    Object.keys(pileItems).forEach(function (key) {
+        if (key == theSelected) {
+            stringBox.push("`" + key + ":" + (pileItems[key]._tempDesc()) + "~");
+        }
+        else {
+            console.log(pileItems[key]);
+            stringBox.push(key + ":" + (pileItems[key]._tempDesc()) + "~");
+        }
+    });
+    Game.characterDisplay.newDraw(1, 1, stringBox, this);
+};
+
+ROT.customMegaCanvas.prototype._printSpecificVisitorOptions = function () {
+    let stringBox = this._selectedVisitor.getMainTalkOptions();
+    console.log("This is string box");
+    console.log(this._selectedVisitor);
+    console.log(stringBox);
+    Game.characterDisplay.newDraw(1, 1,[stringBox] ,this);
+};
+
+ROT.customMegaCanvas.prototype._printStockPiles = function () {
+    let stockOptions = Game._homeBase.getStockPiles();
+    let stringBox = [];
+    Object.keys(stockOptions).forEach(function (key) {
+        stringBox.push(key+":"+stockOptions[key]+"~");
+    });
+    Game.characterDisplay.newDraw(1, 1,stringBox ,this);
+};
+
+ROT.customMegaCanvas.prototype._printVisitors = function () {
+    let peopleVisiting = Game._homeBase.getVisitorsWithKeys();
+    let stringBox = [];
+    Object.keys(peopleVisiting).forEach(function (key) {
+        stringBox.push(key+":"+peopleVisiting[key]._tempDesc()+"~");
+    });
+    Game.characterDisplay.newDraw(1, 1,stringBox ,this);
+};
+
+
+ROT.customMegaCanvas.prototype.startSpecificPile = function (thePile) {
+    if (thePile != null)
+    {
+        this._stopAllScreens();
+        this._whichScreen = "specific stockpile";
+        this._lookingAtSpecificPile = true;
+        this._selectedPile = thePile;
+        this._printSpecificStockPile();
+        this._schedulingWork = false;
+    }
+};
+
+ROT.customMegaCanvas.prototype.startSpecificVisitor = function (theMan) {
+    console.log("THIS IS IN START SPECIFIC VISIOTR");
+    if (theMan != null)
+    {
+        this._stopAllScreens();
+        this._whichScreen = "specific visitor";
+        this._lookingAtSpecificvisitor = true;
+        this._selectedVisitor = theMan;
+        this._printSpecificVisitorOptions();
+        this._schedulingWork = false;
+        this._lookingAtSpecificPile = false;
+    }
+};
+
+ROT.customMegaCanvas.prototype.listenForAndPrintBaseInputs = function () { // NOTE I gotta make sure that only one guy is listening at a time. or else bad stuff might happen, like code being called twice.
+    // NOTE here should probably be cose to reset all listening code.
+    this._listeningForInput = true;
+    this._inBase = true;
+    this._printBaseOptions();
+};
+
+ROT.customMegaCanvas.prototype.startScheduling = function () { // NOTE we don't set other stuff to false and we may want to do that.
+    this._stopAllScreens();
+    this._whichScreen = "scheduling work";
+    this._schedulingWork = true;
+    this._printScheduleOptions();
+};
+
+ROT.customMegaCanvas.prototype.startSpecificScheduling = function (theEmployee) {
+    if (theEmployee != null)
+    {
+        this._schedulingSpecific = true;
+        this._whichScreen = "specific scheduling";
+        this._selectedEmployee = theEmployee;
+        this._printSpecificScheduleOptions();
+    }
+};
+
+ROT.customMegaCanvas.prototype.startBuyMenu = function (theEmployee) {
+    console.log("WE ARE STARTING THE BUY MENU");
+    console.log(theEmployee);
+    if (theEmployee != null)
+    {
+        this._schedulingSpecific = true;
+        this._whichScreen = "Buy screen";
+        this._selectedVisitor = theEmployee;
+        this._printBuyMenu();
+    }
+};
+
+ROT.customMegaCanvas.prototype.startSellMenu = function (theEmployee) {
+    console.log("WE ARE STARTING THE SELL MENU");
+    console.log(theEmployee);
+    if (theEmployee != null)
+    {
+        this._schedulingSpecific = true;
+        this._whichScreen = "Sell screen";
+        this._selectedVisitor = theEmployee;
+        this._printSellMenu();
+    }
+};
+
+ROT.customMegaCanvas.prototype.startObservingMasterStockPiles = function () {
+    this._whichScreen = "main stockpile";
+    this._inMainStockPileScreen = true;
+    this._printStockPiles();
+};
+
+ROT.customMegaCanvas.prototype.startVisitorScreen = function () {
+    this._whichScreen = "main visitor";
+    this._inMainVisitorScreen = true;
+    this._printVisitors();
+};
+
+ROT.customMegaCanvas.prototype.startBaseScreen = function () {
+    Game.characterDisplay._stopAllScreens();
+    Game._logBasicMessage("You have arived safely back at base.");
+    this.newDraw(1, 1, ["Your current home is in a large tunnel where many storm drains meet.~", " The female rat Areata tends to your worm farm.~", "A young clan rat named sticky stands watchful guard.~"], Game.display)
+    Game.characterDisplay.listenForAndPrintBaseInputs();
+    this._whichScreen = "default";
+};
+
 ROT.customMegaCanvas.prototype.handleEvent = function(e){
-    console.log("We are in handle event");
+    console.log("We are in handle event"); //_whichScreen _inMainStockPileScreen _schedulingWork _lookingAtSpecificPile _schedulingSpecific
     if (this._listeningForInput == true)
     {
         let code = e.keyCode; // we are looking for 2 and 8 num pad 2 is 98 num pad 8 is 104 enter is 13
 
-        if (this._inCombatMenu == true){
-            if (this._highlightedCombatOption == null)
+        if (this._inBase == true)
+        {
+            console.log("We are in a base");
+            console.log(this._whichScreen);
+            switch (this._whichScreen) {
+
+                case "default": {Game._homeBase.baseOptionSelected(code); break;}
+
+                case "main stockpile": {
+                    if (code == 27) {
+                        Game.characterDisplay.startBaseScreen();
+                        this._printBaseOptions();
+                    }
+                    else
+                    {
+                        Game._homeBase._handleMainStockPileKey(code);
+                    }
+                    break;}
+
+             //   case "scheduling work": {Game._homeBase.employeeToScheduleSelected(code);  break;}
+
+                case "scheduling work": {
+                    if (code == 27) {
+                        Game.characterDisplay.startBaseScreen();
+                        this._printBaseOptions();
+                    }
+                    else {
+                        Game._homeBase.employeeToScheduleSelected(code);}
+                    break;}
+
+                case "specific scheduling": {this._handleSpecificEmployeeKey(code); break;}
+
+                case "main visitor": {Game._homeBase._handleMainVisitorKey(code); break;}
+
+                case "specific visitor": {Game._homeBase._handleSpecificVisitorKey(code);break;}
+
+                case "Buy screen": {this._handleBuyKey(code); break;}
+
+                case "Sell screen": {this._handleSellKey(code); break;}
+            }
+            //if (this._inMainStockPileScreen == true)
+            //{
+            //    Game._homeBase._handleMainStockPileKey(code);
+            //}
+            //else {
+//
+            //    if (this._schedulingWork == false) {
+            //        Game._homeBase.baseOptionSelected(code);
+            //    }
+            //    else{
+            //        if (this._lookingAtSpecificPile == true)
+            //        {
+            //            this._specificPileKeyPressed(code);
+            //        }
+            //        else {
+            //            if (this._schedulingSpecific == false) {
+            //                if (code == 27) {
+            //                    Game.characterDisplay.startBaseScreen();
+            //                    this._printBaseOptions();
+            //                }
+            //                else {
+            //                    Game._homeBase.employeeToScheduleSelected(code);
+            //                }
+            //            }
+            //            else {
+            //                this._handleSpecificEmployeeKey(code);
+            //            }
+            //        }
+            //    }
+            //}
+        }
+
+    }
+};
+
+ROT.customMegaCanvas.prototype._specificPileKeyPressed = function (code) {// let pileItems = Game._homeBase.getPileItems(this._selectedPile);_selectedItem
+    console.log("this is the code", code);
+    let pileItems = Game._homeBase.getPileItems(this._selectedPile);
+    let pileItemsCount = 0;
+    console.log(pileItems);
+    Object.keys(pileItems).forEach(function (key) {
+        pileItemsCount ++;
+    });
+    //pileItems.forEach(function (item) {
+    //    pileItemsCount ++;
+    //});
+    switch (code) {
+        case 38: {
+            if (this._selectedItem > 1) // up
             {
-                this._highlightedCombatOption = 0;
+                this._selectedItem--;
+            }
+            else {
+                this._selectedItem = pileItemsCount;
+            }
+            this._printSpecificStockPile();
+            break;
+        }
+        case 40: {
+            if (this._selectedItem < pileItemsCount) // down
+            {
+                this._selectedItem++;
+            }
+            else {
+                this._selectedItem = 1;
+            }
+            this._printSpecificStockPile();
+            break;
+        }
+        case 27: {
+                console.log("escape pressed");
+                //Game.characterDisplay.startScheduling();
+                this.startObservingMasterStockPiles();
+                break;
+                // escape
+        }
+    }
+};
+
+ROT.customMegaCanvas.prototype._handleSellKey = function (code) {
+    let aThing = this._selectedVisitor.getGoods();
+    let topLength = 0;//aThing.size;
+    Object.keys(aThing).forEach(function (key) {
+        topLength ++;
+    });
+    switch (code)
+    {
+        case 38:
+        {
+            if (this._selectedItem > 1) // up
+            {
+                this._selectedItem --;
             }
             else
             {
-                if (code == 98)
+                this._selectedItem = topLength;
+            }
+            this._printSellMenu();
+            break;
+        }
+
+        case 40:
+        {
+            console.log("this is selected item and top length");
+            console.log(this._selectedItem);
+            console.log(topLength);
+            if (this._selectedItem < topLength) // down
+            {
+                this._selectedItem ++;
+            }
+            else
+            {
+                this._selectedItem = 1;
+            }
+            this._printSellMenu();
+            break;
+        }
+
+        case 13:
+        {
+            //this.purchaseGood();
+            Game._homeBase.purchaseGood(this._selectedItem);
+            // this._printSpecificScheduleOptions();
+            break;
+        }
+
+        case 27:
+        {
+            console.log("This is case 27 in ");
+            this._schedulingSpecific = true;
+            this._whichScreen = "specific visitor";
+            this._printSpecificVisitorOptions();
+            break;
+        }
+    }
+};
+
+ROT.customMegaCanvas.prototype._handleBuyKey = function (code) {
+    let aThing = this._selectedVisitor.getGoods();
+    let topLength = 0;//aThing.size;
+    Object.keys(aThing).forEach(function (key) {
+        topLength ++;
+    });
+    switch (code)
+    {
+        case 38:
+        {
+            if (this._selectedItem > 1) // up
+            {
+                this._selectedItem --;
+            }
+            else
+            {
+                this._selectedItem = topLength;
+            }
+            this._printBuyMenu();
+            break;
+        }
+
+        case 40:
+        {
+            console.log("this is selected item and top length");
+            console.log(this._selectedItem);
+            console.log(topLength);
+            if (this._selectedItem < topLength) // down
+            {
+                this._selectedItem ++;
+            }
+            else
+            {
+                this._selectedItem = 1;
+            }
+            this._printBuyMenu();
+          //  this._printSpecificScheduleOptions();
+            break;
+        }
+
+        case 13:
+        {
+            //this.purchaseGood();
+            Game._homeBase.purchaseGood(this._selectedItem);
+           // this._printSpecificScheduleOptions();
+            break;
+        }
+
+       case 27:
+       {
+           console.log("This is case 27 in ");
+           this._schedulingSpecific = true;
+           this._whichScreen = "specific visitor";
+           this._printSpecificVisitorOptions();
+           break;
+          //Game.characterDisplay.startScheduling();
+          //this._printScheduleOptions();
+          //break;
+       }
+    }
+};
+
+ROT.customMegaCanvas.prototype._handleSpecificEmployeeKey = function (code) {
+    switch (code)
+    {
+        case 32:
+        {
+            if (this._selectedWorkOption < (this._workOptions.length - 1))
+            {
+                this._selectedWorkOption ++;
+            }
+            else
+            {
+                this._selectedWorkOption = 0;
+            }
+            this._printSpecificScheduleOptions();
+            break;
+        }
+
+        case 38:
+        {
+            if (this._selectedHour > 1) // up
+            {
+                this._selectedHour --;
+            }
+            else
+            {
+                this._selectedHour = 24;
+            }
+            this._printSpecificScheduleOptions();
+            break;
+        }
+
+        case 40:
+        {
+            if (this._selectedHour < 24) // down
+            {
+                this._selectedHour ++;
+            }
+            else
+            {
+                this._selectedHour = 1;
+            }
+            this._printSpecificScheduleOptions();
+            break;
+        }
+
+        case 13:
+        {
+            Game._homeBase.setHourForEmployee(this._selectedHour, this._selectedEmployee, this._workOptions[this._selectedWorkOption]);
+            this._printSpecificScheduleOptions();
+            break;
+        }
+
+        case 27:
+        {
+            console.log("escape pressed");
+            Game.characterDisplay.startScheduling();
+            this._printScheduleOptions();
+            break;
+            // escape
+        }
+    }
+};
+
+ROT.customMegaCanvas.prototype.combatOptionPressStuff = function (code) {
+    if (this._inCombatMenu == true){
+        if (this._highlightedCombatOption == null)
+        {
+            this._highlightedCombatOption = 0;
+        }
+        else
+        {
+            if (code == 98)
+            {
+                if (this._highlightedCombatOption >= (this._attackOptions.length - 1))
                 {
-                    if (this._highlightedCombatOption >= (this._attackOptions.length - 1))
-                    {
-                        this._highlightedCombatOption = 0;
-                    }
-                    else
-                    {
-                        this._highlightedCombatOption ++;
-                    }
+                    this._highlightedCombatOption = 0;
                 }
-                if (code == 104)
+                else
                 {
-                    //console.log("This is highlighted combat options");
-                    //console.log(this._highlightedCombatOption);
-                    if (this._highlightedCombatOption <= 0)
-                    {
-                        this._highlightedCombatOption = (this._attackOptions.length - 1);
-                    }
-                    else
-                    {
-                        this._highlightedCombatOption --;
-                    }
+                    this._highlightedCombatOption ++;
                 }
-                if (code == 13)
+            }
+            if (code == 104)
+            {
+                //console.log("This is highlighted combat options");
+                //console.log(this._highlightedCombatOption);
+                if (this._highlightedCombatOption <= 0)
                 {
-                 //   console.log(this._attackOptions[this._highlightedCombatOption]);
-                    Game._finishAttackEnemy(Game.player.getTarget());
-                    this.stopListening();
+                    this._highlightedCombatOption = (this._attackOptions.length - 1);
+                }
+                else
+                {
+                    this._highlightedCombatOption --;
                 }
             }
             if (code == 13)
             {
-                this.cleanScreen();
-                this._highlightedCombatOption = 0;
+                //   console.log(this._attackOptions[this._highlightedCombatOption]);
+                Game._finishAttackEnemy(Game.player.getTarget());
+                this.stopListening();
             }
-            else
-            { // NOTE maybe I should do a little more abscration with this later.
-                this.printOutCombatOptions(this._attackOptions, (this._attackOptions[this._highlightedCombatOption]));
-            }
-        };
-    }
-};
+        }
+        if (code == 13)
+        {
+            this.cleanScreen();
+            this._highlightedCombatOption = 0;
+        }
+        else
+        { // NOTE maybe I should do a little more abscration with this later.
+            this.printOutCombatOptions(this._attackOptions, (this._attackOptions[this._highlightedCombatOption]));
+        }
+    };
+}
 
 /*
 ROT.customMegaCanvas.prototype.becomeInventory = function () {
